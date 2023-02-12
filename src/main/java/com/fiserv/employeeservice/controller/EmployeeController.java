@@ -1,5 +1,6 @@
 package com.fiserv.employeeservice.controller;
 
+import com.fiserv.employeeservice.dto.EmployeeDepartmentDto;
 import com.fiserv.employeeservice.dto.EmployeeDto;
 import com.fiserv.employeeservice.service.IEmployeeService;
 import lombok.AllArgsConstructor;
@@ -26,5 +27,12 @@ public class EmployeeController {
         EmployeeDto employeeDto = employeeService.getEmployeeById(id);
 
         return new ResponseEntity<>(employeeDto, HttpStatus.OK);
+    }
+
+    @GetMapping("/employee-department/{user-id}")
+    public ResponseEntity<EmployeeDepartmentDto> getEmployeeByIdWithDepartment(@PathVariable("user-id") Long id) {
+        EmployeeDepartmentDto employeeDepartmentDto = employeeService.getEmployeeByIdWithDepartment(id);
+
+        return new ResponseEntity<>(employeeDepartmentDto, HttpStatus.OK);
     }
 }
