@@ -8,12 +8,15 @@ import com.fiserv.employeeservice.exception.EmailAlreadyExistsException;
 import com.fiserv.employeeservice.exception.ResourceNotFoundException;
 import com.fiserv.employeeservice.mapper.IAutoEmployeeMapper;
 import com.fiserv.employeeservice.repository.IEmployeeRepository;
+import com.fiserv.employeeservice.service.APIClient;
 import com.fiserv.employeeservice.service.IEmployeeService;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
@@ -21,7 +24,9 @@ import java.util.Optional;
 @AllArgsConstructor
 public class EmployeeService implements IEmployeeService {
     private IEmployeeRepository employeeRepository;
-    private RestTemplate restTemplate;
+    //private RestTemplate restTemplate;
+    //private WebClient webClient;
+    private APIClient apiClient;
     private ModelMapper modelMapper;
 
     @Override
@@ -58,10 +63,26 @@ public class EmployeeService implements IEmployeeService {
                 () -> new ResourceNotFoundException(String.format("Employee not found for the user id: %d", id))
         );
 
-        ResponseEntity<DepartmentDto> responseEntity = restTemplate.getForEntity
+        /*ResponseEntity<DepartmentDto> responseEntity = restTemplate.getForEntity
                 ("http://localhost:8080/api/departments/code/" + employee.getDepartmentCode(), DepartmentDto.class);
 
-        DepartmentDto departmentDto = responseEntity.getBody();
+        DepartmentDto departmentDto = responseEntity.getBody();*/
+        //Asynchronous call
+        /*System.out.println("hello");
+        Mono<DepartmentDto> monoDepartmentDto = webClient.get()
+                .uri("http://localhost:8080/api/departments/code/" + employee.getDepartmentCode())
+                .retrieve()
+                .bodyToMono(DepartmentDto.class);
+        System.out.println("bye");
+        monoDepartmentDto.subscribe(x -> System.out.println(x.getDepartmentName()));
+        System.out.println("exited");*/
+        //Synchronous call
+        /*DepartmentDto departmentDto = webClient.get()
+                .uri("http://localhost:8080/api/departments/code/" + employee.getDepartmentCode())
+                .retrieve()
+                .bodyToMono(DepartmentDto.class)
+                .block();       //this block indicates it is synchronous call*/
+        DepartmentDto departmentDto = apiClient.getDepartmentByCode(employee.getDepartmentCode());
         EmployeeDto employeeDto = IAutoEmployeeMapper.MAPPER.mapToEmployeeDto(employee);
 
         return new EmployeeDepartmentDto(employeeDto, departmentDto);
