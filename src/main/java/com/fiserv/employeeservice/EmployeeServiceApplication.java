@@ -18,10 +18,10 @@ public class EmployeeServiceApplication {
 	public RestTemplate restTemplate() {
 		return new RestTemplate();
 	}*/
-	/*@Bean
+	@Bean
 	public WebClient webClient() {
 		return WebClient.builder().build();
-	}*/
+	}
 
 	@Bean
 	public ModelMapper modelMapper() {

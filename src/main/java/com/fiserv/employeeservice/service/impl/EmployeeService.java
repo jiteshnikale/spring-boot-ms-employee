@@ -10,8 +10,12 @@ import com.fiserv.employeeservice.mapper.IAutoEmployeeMapper;
 import com.fiserv.employeeservice.repository.IEmployeeRepository;
 import com.fiserv.employeeservice.service.APIClient;
 import com.fiserv.employeeservice.service.IEmployeeService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -23,9 +27,11 @@ import java.util.Optional;
 @Service
 @AllArgsConstructor
 public class EmployeeService implements IEmployeeService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EmployeeService.class);
     private IEmployeeRepository employeeRepository;
     //private RestTemplate restTemplate;
-    //private WebClient webClient;
+    private WebClient webClient;
     private APIClient apiClient;
     private ModelMapper modelMapper;
 
@@ -58,7 +64,10 @@ public class EmployeeService implements IEmployeeService {
     }
 
     @Override
+    //@CircuitBreaker(name="${spring.application.name}", fallbackMethod = "getDefaultDepartment")
+    @Retry(name="${spring.application.name}", fallbackMethod = "getDefaultDepartment")
     public EmployeeDepartmentDto getEmployeeByIdWithDepartment(Long id) {
+        LOGGER.info("inside employeeByIdWithDepartment method");
         Employee employee = employeeRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException(String.format("Employee not found for the user id: %d", id))
         );
@@ -82,8 +91,30 @@ public class EmployeeService implements IEmployeeService {
                 .retrieve()
                 .bodyToMono(DepartmentDto.class)
                 .block();       //this block indicates it is synchronous call*/
+
         DepartmentDto departmentDto = apiClient.getDepartmentByCode(employee.getDepartmentCode());
+
         EmployeeDto employeeDto = IAutoEmployeeMapper.MAPPER.mapToEmployeeDto(employee);
+
+        return new EmployeeDepartmentDto(employeeDto, departmentDto);
+    }
+
+    public EmployeeDepartmentDto getDefaultDepartment(Long id, Exception exception) {
+
+        LOGGER.info("inside getDefaultDepartment fallback method");
+
+        Employee employee = employeeRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException(String.format("Employee not found for the user id: %d", id))
+        );
+
+        EmployeeDto employeeDto = IAutoEmployeeMapper.MAPPER.mapToEmployeeDto(employee);
+
+        DepartmentDto departmentDto = new DepartmentDto(
+                0L,
+                "R&D Department",
+                "Research and Development",
+                "RD001"
+        );
 
         return new EmployeeDepartmentDto(employeeDto, departmentDto);
     }
